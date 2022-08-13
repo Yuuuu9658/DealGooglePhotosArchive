@@ -25,7 +25,14 @@ def GetMD5FromFile(filename):
 def dealDuplicate(delete=True):
     fileMD5List = {}
     dg = os.walk(scanDir)
+    DupDir = outPutDir + '/Duplicate/'  #重复文件存放文件夹
+    if not os.path.exists(DupDir):
+        os.makedirs(DupDir)
+
     for path,dir_list,file_list in dg:
+        if path == DupDir:
+            print('跳过 '+DupDir+' 文件夹')
+            continue;
         for file_name in file_list:
             full_file_name = os.path.join(path, file_name)
             if file_name == '元数据.json':
@@ -33,9 +40,7 @@ def dealDuplicate(delete=True):
             #处理重复文件
             _md5 = GetMD5FromFile(full_file_name)
             if _md5 in fileMD5List.keys() and full_file_name != fileMD5List[_md5]:
-                DupDir = outPutDir + '/Duplicate/'
-                if not os.path.exists(DupDir):
-                    os.makedirs(DupDir)
+                
                 if delete:
                     os.remove(full_file_name) #这里可以直接删除
                 else:
@@ -89,6 +94,13 @@ def dealClassify():
                     os.makedirs(jsonDir)
                 if not os.path.exists(jsonDir + file_name):
                     shutil.move(full_file_name, jsonDir)
+            #其他文件存储到Photos文件夹
+            else:
+                photosDir = outPutDir + '/Photos/'
+                if not os.path.exists(photosDir):
+                    os.makedirs(photosDir)
+                if not os.path.exists(photosDir + file_name):
+                    shutil.move(full_file_name, photosDir)
 #计算lat/lng信息
 def format_latlng(latlng):
     degree = int(latlng)
@@ -153,12 +165,8 @@ def dealExif():
                     continue
                     # exif_dict = {'0th':{},'Exif': {},'GPS': {}}
 
-                
-                
-
-
-if __name__ == '__main__':
-    scanDir = r'/Volumes/SanDisk/temp/googlephotos' #TODO 这里修改归档的解压目录
+#check
+def check():
     if scanDir == r'/Users/XXX/Downloads/Takeout':
         print("\033[31mPlease modify scanDir\033[0m")
         print("\033[31m请修改scanDir变量你的归档解压文件夹路径\033[0m")
@@ -168,7 +176,12 @@ if __name__ == '__main__':
     else:
         print("\033[31m请先移除路径\033[0m" + " \033[31m" + scanDir + outPutDir +"\033[0m" + " \033[31m避免重复扫描\033[0m" )
         sys.exit()
-    outPutDir = scanDir + outPutDir
+    outPutDir = scanDir + outPutDir            
+
+
+if __name__ == '__main__':
+    scanDir = r'/Users/XXX/Downloads/Takeout' #TODO 这里修改归档的解压目录
+    check()
     dealDuplicate()
     dealClassify()
     dealExif()
