@@ -3,18 +3,27 @@
 # @Author  : gty0211@foxmail.com
 import json
 import os
+import sys
 import shutil
 import time
 import ffmpeg
 import piexif
+import hashlib
 from PIL import Image, UnidentifiedImageError
 
 #归档zip解压目录
 scanDir = ''
-
+outPutDir = '/DealGoogleOutput'
+#获取文件MD5
+def GetMD5FromFile(filename):
+    file_object = open(filename, 'rb')
+    file_content = file_object.read()
+    file_object.close()
+    file_md5 = hashlib.md5(file_content)
+    return file_md5.hexdigest()
 #处理重复
 def dealDuplicate(delete=True):
-    fileList = {}
+    fileMD5List = {}
     dg = os.walk(scanDir)
     for path,dir_list,file_list in dg:
         for file_name in file_list:
@@ -22,8 +31,9 @@ def dealDuplicate(delete=True):
             if file_name == '元数据.json':
                 continue
             #处理重复文件
-            if file_name in fileList.keys():
-                DupDir = scanDir + '/Duplicate/'
+            _md5 = GetMD5FromFile(full_file_name)
+            if _md5 in fileMD5List.keys() and full_file_name != fileMD5List[_md5]:
+                DupDir = outPutDir + '/Duplicate/'
                 if not os.path.exists(DupDir):
                     os.makedirs(DupDir)
                 if delete:
@@ -31,10 +41,12 @@ def dealDuplicate(delete=True):
                 else:
                     if not os.path.exists(DupDir + file_name):
                         shutil.move(full_file_name, DupDir)
-                print('重复文件：' + full_file_name + ' ------ ' + fileList[file_name])
+                    else: #存在多个就删除
+                        os.remove(full_file_name)
+                print('重复文件：' + full_file_name + ' ------ ' + fileMD5List[_md5])
             else:
-                fileList[file_name] = full_file_name
-    fileList.clear()
+                fileMD5List[_md5] = full_file_name
+    fileMD5List.clear()
 #文件分类
 def dealClassify():
     #部分文件变了，重新扫描
@@ -49,7 +61,7 @@ def dealClassify():
                 #print(info)
                 duration = info['format']['duration'] #时长
                 if float(duration) <= 2:
-                    under2Dir = scanDir + '/under2/'
+                    under2Dir = outPutDir + '/under2/'
                     if not os.path.exists(under2Dir):
                         print('创建文件夹：' + under2Dir)
                         os.makedirs(under2Dir)
@@ -57,7 +69,7 @@ def dealClassify():
                         shutil.move(full_file_name, under2Dir)
 
                 elif 2 < float(duration) <= 3:
-                    under3Dir = scanDir + '/under3/'
+                    under3Dir = outPutDir + '/under3/'
                     if not os.path.exists(under3Dir):
                         print('创建文件夹：' + under3Dir)
                         os.makedirs(under3Dir)
@@ -65,14 +77,14 @@ def dealClassify():
                         shutil.move(full_file_name, under3Dir)
             #处理HEIC文件
             elif os.path.splitext(file_name)[-1] == '.HEIC':
-                heicDir = scanDir + '/HEIC/'
+                heicDir = outPutDir + '/HEIC/'
                 if not os.path.exists(heicDir):
                     os.makedirs(heicDir)
                 if not os.path.exists(heicDir + file_name):
                     shutil.move(full_file_name, heicDir)
             #单独存储json文件
             elif os.path.splitext(file_name)[-1] == '.json':
-                jsonDir = scanDir + '/json/'
+                jsonDir = outPutDir + '/json/'
                 if not os.path.exists(jsonDir):
                     os.makedirs(jsonDir)
                 if not os.path.exists(jsonDir + file_name):
@@ -88,7 +100,7 @@ def format_latlng(latlng):
     return ((degree, 1), (minute, 1), (int(seconds * 1000), 1000))
 #读json
 def readJson(json_file):
-    with open(json_file, 'r') as load_f:
+    with open(json_file, 'r',encoding='UTF-8') as load_f:
         return json.load(load_f)
 #处理照片exif信息
 def dealExif():
@@ -101,50 +113,64 @@ def dealExif():
                 # if file_name != 'ee7db1e41afc9fd342e42e0a5034006b.JPG':   #   单文件测试
                 #     continue
 
-                if not os.path.exists(scanDir + '/json/' + file_name + '.json'):
+                if not os.path.exists(outPutDir + '/json/' + file_name + '.json'):
                     continue
-                exifJson = readJson(scanDir + '/json/' + file_name + '.json')
+                exifJson = readJson(outPutDir + '/json/' + file_name + '.json')
                 print('处理Exif：' + full_file_name)
                 try:
                     img = Image.open(full_file_name)  # 读图
                     exif_dict = piexif.load(img.info['exif'])
+                    # 修改exif数据
+                    if 'photoTakenTime' in exifJson.keys():
+                        exif_dict['0th'][piexif.ImageIFD.DateTime] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(exifJson['photoTakenTime']['timestamp']))).encode('utf-8')
+                    if 'creationTime' in exifJson.keys():
+                        exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(exifJson['creationTime']['timestamp']))).encode('utf-8')
+                    if 'photoLastModifiedTime' in exifJson.keys():
+                        exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(exifJson['photoLastModifiedTime']['timestamp']))).encode('utf-8')
+                    if 'geoDataExif' in exifJson.keys():
+                        exif_dict['GPS'][piexif.GPSIFD.GPSLatitude] = format_latlng(exifJson['geoDataExif']['latitude'])
+                        exif_dict['GPS'][piexif.GPSIFD.GPSLongitude] = format_latlng(exifJson['geoDataExif']['longitude'])
+                    # exif_dict['GPS'][piexif.GPSIFD.GPSLongitudeRef] = 'W'
+                    # exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef] = 'N'
+                    exif_bytes = piexif.dump(exif_dict)
+                    img.save(full_file_name, None, exif=exif_bytes)
+
+                    #修改文件时间（可选）
+                    # photoTakenTime = time.strftime("%Y%m%d%H%M.%S", time.localtime(int(exifJson['photoTakenTime']['timestamp'])))
+                    # os.system('touch -t "{}" "{}"'.format(photoTakenTime, full_file_name))
+                    # os.system('touch -mt "{}" "{}"'.format(photoTakenTime, full_file_name))
+
+                    # print(type(exif_dict), exif_dict)
+                    # for ifd in ("0th", "Exif", "GPS", "1st"):
+                    #     print(ifd)
+                    #     for tag in exif_dict[ifd]:
+                    #         print(piexif.TAGS[ifd][tag], exif_dict[ifd][tag])
                 except UnidentifiedImageError:
                     print("图片读取失败：" + full_file_name)
                     continue
                 except KeyError:
-                    print("图片没有exif数据，尝试创建：" + full_file_name)
-                    exif_dict = {'0th':{},'Exif': {},'GPS': {}}
+                    print("图片没有exif数据" + full_file_name)
+                    continue
+                    # exif_dict = {'0th':{},'Exif': {},'GPS': {}}
 
-                # 修改exif数据
-                exif_dict['0th'][piexif.ImageIFD.DateTime] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(
-                    int(exifJson['photoTakenTime']['timestamp']))).encode('utf-8')
-                exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(
-                    int(exifJson['creationTime']['timestamp']))).encode('utf-8')
-                exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(
-                    int(exifJson['modificationTime']['timestamp']))).encode('utf-8')
-                exif_dict['GPS'][piexif.GPSIFD.GPSLatitude] = format_latlng(exifJson['geoDataExif']['latitude'])
-                exif_dict['GPS'][piexif.GPSIFD.GPSLongitude] = format_latlng(exifJson['geoDataExif']['longitude'])
-                # exif_dict['GPS'][piexif.GPSIFD.GPSLongitudeRef] = 'W'
-                # exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef] = 'N'
-                exif_bytes = piexif.dump(exif_dict)
-                img.save(full_file_name, None, exif=exif_bytes)
-
-                #修改文件时间（可选）
-                # photoTakenTime = time.strftime("%Y%m%d%H%M.%S", time.localtime(int(exifJson['photoTakenTime']['timestamp'])))
-                # os.system('touch -t "{}" "{}"'.format(photoTakenTime, full_file_name))
-                # os.system('touch -mt "{}" "{}"'.format(photoTakenTime, full_file_name))
-
-                # print(type(exif_dict), exif_dict)
-                # for ifd in ("0th", "Exif", "GPS", "1st"):
-                #     print(ifd)
-                #     for tag in exif_dict[ifd]:
-                #         print(piexif.TAGS[ifd][tag], exif_dict[ifd][tag])
-                # exit()
+                
+                
 
 
 if __name__ == '__main__':
-    scanDir = r'/Users/XXX/Downloads/Takeout' #TODO 这里修改归档的解压目录
+    scanDir = r'/Volumes/SanDisk/temp/googlephotos' #TODO 这里修改归档的解压目录
+    if scanDir == r'/Users/XXX/Downloads/Takeout':
+        print("\033[31mPlease modify scanDir\033[0m")
+        print("\033[31m请修改scanDir变量你的归档解压文件夹路径\033[0m")
+        sys.exit()
+    if not os.path.exists(scanDir + outPutDir):
+        os.makedirs(scanDir + outPutDir)
+    else:
+        print("\033[31m请先移除路径\033[0m" + " \033[31m" + scanDir + outPutDir +"\033[0m" + " \033[31m避免重复扫描\033[0m" )
+        sys.exit()
+    outPutDir = scanDir + outPutDir
     dealDuplicate()
     dealClassify()
     dealExif()
-    print('终于搞完了，Google Photos 辣鸡')
+    print('处理完成，文件输出在：' + outPutDir)
+    # print('终于搞完了，Google Photos 辣鸡')
