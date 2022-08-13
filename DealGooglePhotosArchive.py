@@ -13,7 +13,7 @@ from PIL import Image, UnidentifiedImageError
 
 #归档zip解压目录
 scanDir = ''
-outPutDir = '/DealGoogleOutput'
+outPutDir = ''
 HEICNum = JsonNum = PhotoNum = Under2Num = Under3Num = DumpNum = ExifNum = 0
 #获取文件MD5
 def GetMD5FromFile(filename):
@@ -173,6 +173,7 @@ def dealExif():
 
 #check
 def check():
+    global outPutDir
     if scanDir == r'/Users/XXX/Downloads/Takeout':
         print("\033[31mPlease modify scanDir\033[0m")
         print("\033[31m请修改scanDir变量你的归档解压文件夹路径\033[0m")
@@ -187,6 +188,7 @@ def check():
 
 if __name__ == '__main__':
     scanDir = r'/Users/XXX/Downloads/Takeout' #TODO 这里修改归档的解压目录
+    outPutDir = '/DealGoogleOutput'
     check()
     dealDuplicate()
     dealClassify()
