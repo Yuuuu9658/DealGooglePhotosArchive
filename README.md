@@ -3,7 +3,7 @@
 
 #### 前提
 
-承接上一篇[《如何批量导出Google相册所有数据》](https://note.guotianyu.cn/Archive/GooglePhotos-MultDown.html)
+承接上一篇[《如何批量导出Google相册所有数据》](https://note.coccoo.cc/Archive/GooglePhotos-MultDown.html) ｜ [《如何批量导出Google相册所有数据》](./GooglePhotosExport.md) 
 根据上一篇的方法导出的归档数据，往往许多信息都被抹除了，也就是Meta信息丢失，其中包括但不限于照片的`定位信息（经纬度）`、`拍摄时间`、`拍照设备`、`光圈`等一大堆信息。如果你默认下载了所有相册集，那么可能会有大量**重复**照片等着你，最可气的是如果你没有调整IOS设备的拍照格式的话，默认派出的都是`HEIC/HEVC`格式的内容，而Google恰恰又把IOS设备默认的`HEIC`格式照片直接处理成了一个`jpg`加一个2到3秒左右的`MOV`短视频，如果你使用`HEIC`拍摄了大量照片，那可能只能一个个手动在相册选择删除。
 
 所以一般来讲，通过归档批量导出的数据，可能会遇到以下几种情况：
@@ -24,7 +24,7 @@
 
 我仔细观察了一下，发现大量重复照片和视频的下载名称都相同，那就直接扫描文件夹，把重复文件剔除即可
 
-![重复照片](https://image-1252176127.cos.ap-shanghai.myqcloud.com/2021/06/29/1624968857.png)
+![重复照片](./images/1624968857.png)
 
 
 
@@ -59,7 +59,7 @@ def dealDuplicate(delete=True):
 
 另一个就是大量`HEIC`转换出来的大量短视频，都是`.MOV`格式文件，这里我选择通过`ffmpeg`判断视频时长，进而把时长在`3s`以内的视频过滤出来，最终~~全部删除~~有选择地分门别类。
 
-![大量短视频](https://image-1252176127.cos.ap-shanghai.myqcloud.com/2021/06/29/1624968992.png)
+![大量短视频](./images/1624968992.png)
 
 这里需要安装一下ffmpeg的扩展，`pip3 install ffmpeg-python`即可
 
