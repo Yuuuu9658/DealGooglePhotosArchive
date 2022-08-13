@@ -14,6 +14,7 @@ from PIL import Image, UnidentifiedImageError
 #归档zip解压目录
 scanDir = ''
 outPutDir = '/DealGoogleOutput'
+HEICNum = JsonNum = PhotoNum = Under2Num = Under3Num = DumpNum = ExifNum = 0
 #获取文件MD5
 def GetMD5FromFile(filename):
     file_object = open(filename, 'rb')
@@ -40,7 +41,7 @@ def dealDuplicate(delete=True):
             #处理重复文件
             _md5 = GetMD5FromFile(full_file_name)
             if _md5 in fileMD5List.keys() and full_file_name != fileMD5List[_md5]:
-                
+                DumpNum += 1
                 if delete:
                     os.remove(full_file_name) #这里可以直接删除
                 else:
@@ -66,6 +67,7 @@ def dealClassify():
                 #print(info)
                 duration = info['format']['duration'] #时长
                 if float(duration) <= 2:
+                    Under2Num += 1
                     under2Dir = outPutDir + '/under2/'
                     if not os.path.exists(under2Dir):
                         print('创建文件夹：' + under2Dir)
@@ -74,6 +76,7 @@ def dealClassify():
                         shutil.move(full_file_name, under2Dir)
 
                 elif 2 < float(duration) <= 3:
+                    Under3Num += 1
                     under3Dir = outPutDir + '/under3/'
                     if not os.path.exists(under3Dir):
                         print('创建文件夹：' + under3Dir)
@@ -82,6 +85,7 @@ def dealClassify():
                         shutil.move(full_file_name, under3Dir)
             #处理HEIC文件
             elif os.path.splitext(file_name)[-1] == '.HEIC':
+                HEICNum += 1
                 heicDir = outPutDir + '/HEIC/'
                 if not os.path.exists(heicDir):
                     os.makedirs(heicDir)
@@ -89,6 +93,7 @@ def dealClassify():
                     shutil.move(full_file_name, heicDir)
             #单独存储json文件
             elif os.path.splitext(file_name)[-1] == '.json':
+                JsonNum += 1
                 jsonDir = outPutDir + '/json/'
                 if not os.path.exists(jsonDir):
                     os.makedirs(jsonDir)
@@ -96,6 +101,7 @@ def dealClassify():
                     shutil.move(full_file_name, jsonDir)
             #其他文件存储到Photos文件夹
             else:
+                PhotoNum += 1
                 photosDir = outPutDir + '/Photos/'
                 if not os.path.exists(photosDir):
                     os.makedirs(photosDir)
@@ -146,7 +152,7 @@ def dealExif():
                     # exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef] = 'N'
                     exif_bytes = piexif.dump(exif_dict)
                     img.save(full_file_name, None, exif=exif_bytes)
-
+                    ExifNum += 1
                     #修改文件时间（可选）
                     # photoTakenTime = time.strftime("%Y%m%d%H%M.%S", time.localtime(int(exifJson['photoTakenTime']['timestamp'])))
                     # os.system('touch -t "{}" "{}"'.format(photoTakenTime, full_file_name))
@@ -185,5 +191,14 @@ if __name__ == '__main__':
     dealDuplicate()
     dealClassify()
     dealExif()
+    
+    print("HEIC数量："+HEICNum)
+    print("Json数量："+JsonNum)
+    print("图片数量："+PhotoNum)
+    print("小于2s视频"+Under2Num)
+    print("小于3s视频"+Under3Num)
+    print("HEIC数量："+HEICNum)
+    print("重新文件数量："+DumpNum)
+    print("处理Meta数量："+ExifNum)
     print('处理完成，文件输出在：' + outPutDir)
     # print('终于搞完了，Google Photos 辣鸡')
