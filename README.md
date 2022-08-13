@@ -1,6 +1,10 @@
 # DealGooglePhotosArchive
 修复Google 相册导出时产生的Meta混乱，时间错乱，产生短视频等问题
 
+## Env 环境要求
+
+- Python3
+- ffmpeg
 
 ## Usage 用法
 
