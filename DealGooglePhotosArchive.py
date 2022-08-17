@@ -133,11 +133,11 @@ def dealExif():
                     exif_dict = piexif.load(img.info['exif'])
                     # 修改exif数据
                     if 'photoTakenTime' in exifJson.keys():
-                        exif_dict['0th'][piexif.ImageIFD.DateTime] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(exifJson['photoTakenTime']['timestamp']))).encode('utf-8')
+                        exif_dict['0th'][piexif.ImageIFD.DateTime] = time.strftime("%Y:%m:%d %H:%M:%S", time.localtime(int(exifJson['photoTakenTime']['timestamp']))).encode('utf-8')
                     if 'creationTime' in exifJson.keys():
-                        exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(exifJson['creationTime']['timestamp']))).encode('utf-8')
+                        exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = time.strftime("%Y:%m:%d %H:%M:%S", time.localtime(int(exifJson['creationTime']['timestamp']))).encode('utf-8')
                     if 'photoLastModifiedTime' in exifJson.keys():
-                        exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(exifJson['photoLastModifiedTime']['timestamp']))).encode('utf-8')
+                        exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = time.strftime("%Y:%m:%d %H:%M:%S", time.localtime(int(exifJson['creationTime']['timestamp']))).encode('utf-8')
                     if 'geoDataExif' in exifJson.keys():
                         exif_dict['GPS'][piexif.GPSIFD.GPSLatitude] = format_latlng(exifJson['geoDataExif']['latitude'])
                         exif_dict['GPS'][piexif.GPSIFD.GPSLongitude] = format_latlng(exifJson['geoDataExif']['longitude'])
