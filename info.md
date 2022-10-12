@@ -5,7 +5,7 @@
 
 ## 前提
 
-承接上一篇[《如何批量导出Google相册所有数据》](https://note.coccoo.cc/Archive/GooglePhotos-MultDown.html) ｜ [《如何批量导出Google相册所有数据》](./GooglePhotosExport.md) 
+承接上一篇[《如何批量导出Google相册所有数据》](https://mp.weixin.qq.com/s/UC4K6Fu_BgjpwBqpyQCpWw) ｜ [《如何批量导出Google相册所有数据》](./GooglePhotosExport.md) 
 根据上一篇的方法导出的归档数据，往往许多信息都被抹除了，也就是Meta信息丢失，其中包括但不限于照片的`定位信息（经纬度）`、`拍摄时间`、`拍照设备`、`光圈`等一大堆信息。如果你默认下载了所有相册集，那么可能会有大量**重复**照片等着你，最可气的是如果你没有调整IOS设备的拍照格式的话，默认派出的都是`HEIC/HEVC`格式的内容，而Google恰恰又把IOS设备默认的`HEIC`格式照片直接处理成了一个`jpg`加一个2到3秒左右的`MOV`短视频，如果你使用`HEIC`拍摄了大量照片，那可能只能一个个手动在相册选择删除。
 
 所以一般来讲，通过归档批量导出的数据，可能会遇到以下几种情况：
